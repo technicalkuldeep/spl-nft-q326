@@ -13,7 +13,10 @@ const umi = createUmi(
   process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
 );
 
-const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(wallet));
+const keypair = umi.eddsa.createKeypairFromSecretKey(
+  new Uint8Array(wallet),
+);
+
 const signer = createSignerFromKeypair(umi, keypair);
 
 umi.use(
@@ -26,14 +29,19 @@ umi.use(signerIdentity(signer));
 
 (async () => {
   try {
-    //chanege image path to your image path
-    const image = await readFile("file-path");
+    // Read the image from the assets folder
+    const image = await readFile("./assets/Srinath.png");
 
-    //change the image name and mime type
-    // const file =
+    // Convert the image into a GenericFile
+    const file = createGenericFile(image, "Srinath.png", {
+      contentType: "image/png",
+    });
 
-    // const [myUri] =
-    // console.log("Your image URI: ", myUri);
+    // Upload the image to Irys
+    const [myUri] = await umi.uploader.upload([file]);
+
+    // Print the image URI
+    console.log("Your image URI: ", myUri);
   } catch (error) {
     console.log(error);
   }

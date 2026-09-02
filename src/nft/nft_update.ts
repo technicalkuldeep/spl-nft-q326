@@ -2,10 +2,13 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import wallet from "../../devnet-wallet.json";
 import {
   createSignerFromKeypair,
-  generateSigner,
   signerIdentity,
 } from "@metaplex-foundation/umi";
-import { create, mplCore } from "@metaplex-foundation/mpl-core";
+import {
+  mplCore,
+  fetchAsset,
+  update,
+} from "@metaplex-foundation/mpl-core";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 
 const umi = createUmi(
@@ -19,32 +22,39 @@ const keypair = umi.eddsa.createKeypairFromSecretKey(
 const signer = createSignerFromKeypair(umi, keypair);
 
 umi.use(signerIdentity(signer));
-
 umi.use(mplCore());
 
 (async () => {
   try {
-    // Metadata URI created in nft_metadata.ts
+    // Address of the NFT we created in nft_mint.ts
+    const assetAddress =
+      "BxbxaRNxGYpc4FQyNNsu9tYT5hF7Yrm9SxFvdcMpzVgH";
+
+    // Metadata URI for the NFT
     const metadataUri =
       "https://gateway.irys.xyz/BvMeLYujeXCA1nhvLNQ59Z2bKvv6fTGizhRmJwcKbGDc";
 
-    // Generate a new address for our NFT
-    const asset = generateSigner(umi);
+    // Fetch the existing MPL Core asset
+    const asset = await fetchAsset(umi, assetAddress);
 
-    // Create the MPL Core NFT
-    const tx = await create(umi, {
-      asset,
-      name: "Srinath NFT",
+    console.log("Current NFT name:", asset.name);
+    console.log("Current NFT URI:", asset.uri);
+
+    // Update the NFT
+    const tx = await update(umi, {
+      asset: asset,
+      name: "Srinath Updated NFT",
       uri: metadataUri,
     }).sendAndConfirm(umi);
 
-    // Convert transaction signature to base58
     const signature = base58.deserialize(tx.signature)[0];
 
-    console.log("NFT minted successfully!");
+    console.log("NFT updated successfully!");
     console.log(`Signature: ${signature}`);
-    console.log(`Asset address: ${asset.publicKey}`);
-  } catch (e) {
-    console.log("Error:", e);
+    console.log(`Asset address: ${assetAddress}`);
+    console.log("New NFT name: Srinath Updated NFT");
+    console.log(`New metadata URI: ${metadataUri}`);
+  } catch (error) {
+    console.log("Error updating NFT:", error);
   }
 })();

@@ -1,6 +1,5 @@
 import {
   address,
-  appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   assertIsTransactionWithBlockhashLifetime,
   createKeyPairSignerFromBytes,
@@ -13,7 +12,9 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
 } from "@solana/kit";
+
 import wallet from "../../devnet-wallet.json";
+
 import {
   findAssociatedTokenPda,
   getCreateAssociatedTokenInstructionAsync,
@@ -27,56 +28,102 @@ const rpcSubscriptions = createSolanaRpcSubscriptions(
   "wss://api.devnet.solana.com",
 );
 
-const token_decimals = 1_000_000n;
+// Your SPL token mint address
+const mint = address(
+  "D9WXV9wtsELdTZcCQKCaRGgrBESQjcESZ5dq5EUPe3MK",
+);
 
-//paste your mint address got from spl_init.ts
-const mint = address("E2Jazz2VXcVL9RZkn6ZFA4q1YGvgEvrns3Gr6w72DC4w");
+// We want to mint 1000 tokens.
+// The token has 6 decimals, so 1000 tokens = 1000 * 10^6 base units.
+const tokenAmount = 1000n * 1_000_000n;
 
 (async () => {
   try {
-    const signer = await createKeyPairSignerFromBytes(new Uint8Array(wallet));
+    // Load your wallet
+    const signer = await createKeyPairSignerFromBytes(
+      new Uint8Array(wallet),
+    );
 
+    // Find your associated token account
     const [ata] = await findAssociatedTokenPda({
       mint,
       owner: signer.address,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     });
-    console.log(`Your ata is : ${ata}`);
 
-    // const createAtaIx =
-    // const mintToIx =
+    console.log("Your wallet:", signer.address);
+    console.log("Your ATA:", ata);
 
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+    // Create the associated token account
+    const createAtaIx =
+      await getCreateAssociatedTokenInstructionAsync({
+        payer: signer,
+        owner: signer.address,
+        mint,
+        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+      });
 
-    const msg = createTransactionMessage({ version: 0 });
+    // Mint tokens to your associated token account
+    const mintToIx = getMintToInstruction({
+      mint,
+      token: ata,
+      mintAuthority: signer,
+      amount: tokenAmount,
+    });
 
-    const msgWithPayer = setTransactionMessageFeePayerSigner(signer, msg);
+    // Get the latest blockhash
+    const { value: latestBlockhash } =
+      await rpc.getLatestBlockhash().send();
 
-    const msgWithLiftime = setTransactionMessageLifetimeUsingBlockhash(
-      latestBlockhash,
-      msgWithPayer,
+    // Create transaction message
+    const msg = createTransactionMessage({
+      version: 0,
+    });
+
+    // Set wallet as fee payer
+    const msgWithPayer = setTransactionMessageFeePayerSigner(
+      signer,
+      msg,
     );
 
-    // const txMessage = appendTransactionMessageInstructions(
-    //   [createAtaIx, mintToIx],
-    //   msgWithLiftime,
-    // );
+    // Set transaction lifetime
+    const msgWithLifetime =
+      setTransactionMessageLifetimeUsingBlockhash(
+        latestBlockhash,
+        msgWithPayer,
+      );
 
-    // const signedTx = await signTransactionMessageWithSigners(txMessage);
+    // Add both instructions to the transaction
+    const txMessage = appendTransactionMessageInstructions(
+      [createAtaIx, mintToIx],
+      msgWithLifetime,
+    );
 
-    // assertIsTransactionWithBlockhashLifetime(signedTx);
+    // Sign the transaction
+    const signedTx =
+      await signTransactionMessageWithSigners(txMessage);
 
-    // const signature = getSignatureFromTransaction(signedTx);
+    assertIsTransactionWithBlockhashLifetime(signedTx);
 
-    // const sendAndConfirm = sendAndConfirmTransactionFactory({
-    //   rpc,
-    //   rpcSubscriptions,
-    // });
+    // Get transaction signature
+    const signature = getSignatureFromTransaction(signedTx);
 
-    // await sendAndConfirm(signedTx, { commitment: "confirmed" });
+    // Send and confirm transaction
+    const sendAndConfirm = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
 
-    // console.log(`mint txid: ${signature}`);
+    await sendAndConfirm(signedTx, {
+      commitment: "confirmed",
+    });
+
+    console.log("Tokens minted successfully!");
+    console.log("Amount minted: 1000 SRIN");
+    console.log("Mint address:", mint);
+    console.log("ATA:", ata);
+    console.log("Signature:", signature);
   } catch (error) {
-    console.log(error);
+    console.log("Error minting tokens:", error);
   }
 })();

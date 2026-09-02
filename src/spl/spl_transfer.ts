@@ -12,7 +12,9 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
 } from "@solana/kit";
+
 import wallet from "../../devnet-wallet.json";
+
 import {
   findAssociatedTokenPda,
   getCreateAssociatedTokenInstructionAsync,
@@ -26,64 +28,122 @@ const rpcSubscriptions = createSolanaRpcSubscriptions(
   "wss://api.devnet.solana.com",
 );
 
-//paste your mint address got from spl_init.ts
-const mint = address("E2Jazz2VXcVL9RZkn6ZFA4q1YGvgEvrns3Gr6w72DC4w");
+// Your SPL token mint
+const mint = address(
+  "D9WXV9wtsELdTZcCQKCaRGgrBESQjcESZ5dq5EUPe3MK",
+);
 
-//paste the address of the recipient
-const to = address("9EUd4VNcjMAysd7zQk3Q1a4tb28BYndLNBAQDiYnHJ64");
+// Recipient wallet
+const to = address(
+  "9EUd4VNcjMAysd7zQk3Q1a4tb28BYndLNBAQDiYnHJ64",
+);
+
+// Transfer 100 SRIN
+const transferAmount = 100n * 1_000_000n;
+
+// Token decimals
+const decimals = 6;
 
 (async () => {
   try {
-    const signer = await createKeyPairSignerFromBytes(new Uint8Array(wallet));
-    const sendAndConfirm = sendAndConfirmTransactionFactory({
-      rpc,
-      rpcSubscriptions,
-    });
+    // Load your wallet
+    const signer = await createKeyPairSignerFromBytes(
+      new Uint8Array(wallet),
+    );
 
+    console.log("Sender:", signer.address);
+    console.log("Recipient:", to);
+
+    // Find sender's associated token account
     const [fromAta] = await findAssociatedTokenPda({
       mint,
       owner: signer.address,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     });
-    console.log(`Your fromAta is : ${fromAta}`);
 
+    console.log("Your fromAta:", fromAta);
+
+    // Find recipient's associated token account
     const [toAta] = await findAssociatedTokenPda({
       mint,
       owner: to,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     });
-    console.log(`Your toAta is : ${toAta}`);
 
-    // const createAtaIx =
+    console.log("Recipient toAta:", toAta);
 
-    // const transferTx =
+    // Create recipient ATA if it doesn't exist
+    const createAtaIx =
+      await getCreateAssociatedTokenInstructionAsync({
+        payer: signer,
+        owner: to,
+        mint,
+        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+      });
 
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+    // Transfer tokens
+    const transferTx = getTransferCheckedInstruction({
+      source: fromAta,
+      mint,
+      destination: toAta,
+      authority: signer,
+      amount: transferAmount,
+      decimals,
+    });
 
-    const msg = createTransactionMessage({ version: 0 });
+    // Get latest blockhash
+    const { value: latestBlockhash } =
+      await rpc.getLatestBlockhash().send();
 
-    const msgWithPayer = setTransactionMessageFeePayerSigner(signer, msg);
+    // Create transaction message
+    const msg = createTransactionMessage({
+      version: 0,
+    });
 
-    const msgWithLiftime = setTransactionMessageLifetimeUsingBlockhash(
-      latestBlockhash,
-      msgWithPayer,
+    // Set sender as fee payer
+    const msgWithPayer = setTransactionMessageFeePayerSigner(
+      signer,
+      msg,
     );
 
-    // const txMessage = appendTransactionMessageInstructions(
-    //   [createAtaIx, transferTx],
-    //   msgWithLiftime,
-    // );
+    // Set transaction lifetime
+    const msgWithLifetime =
+      setTransactionMessageLifetimeUsingBlockhash(
+        latestBlockhash,
+        msgWithPayer,
+      );
 
-    // const signedTx = await signTransactionMessageWithSigners(txMessage);
+    // Add ATA creation + token transfer instructions
+    const txMessage = appendTransactionMessageInstructions(
+      [createAtaIx, transferTx],
+      msgWithLifetime,
+    );
 
-    // assertIsTransactionWithBlockhashLifetime(signedTx);
+    // Sign transaction
+    const signedTx =
+      await signTransactionMessageWithSigners(txMessage);
 
-    // const signature = getSignatureFromTransaction(signedTx);
+    assertIsTransactionWithBlockhashLifetime(signedTx);
 
-    // await sendAndConfirm(signedTx, { commitment: "confirmed" });
+    // Get signature
+    const signature = getSignatureFromTransaction(signedTx);
 
-    // console.log(`mint txid: ${signature}`);
+    // Send and confirm
+    const sendAndConfirm = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions,
+    });
+
+    await sendAndConfirm(signedTx, {
+      commitment: "confirmed",
+    });
+
+    console.log("Tokens transferred successfully!");
+    console.log("Amount transferred: 100 SRIN");
+    console.log("From:", fromAta);
+    console.log("To:", toAta);
+    console.log("Signature:", signature);
   } catch (error) {
-    console.log(error);
+    console.log("Error transferring tokens:", error);
   }
 })();

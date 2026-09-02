@@ -1,72 +1,63 @@
-# scripts-solana
+# Solana SPL Token & NFT Assignment
 
-Scripts for creating SPL tokens and NFTs on Solana devnet.
+This repository contains my implementation of the Solana SPL Token and Metaplex Core NFT assignment.
 
----
+The project was completed on Solana Devnet for practice and learning purposes.
 
-## Setup
+## Requirements Completed
 
-### 1. Add your wallet
+### Mandatory Tasks
 
-Place your devnet wallet keypair file at the project root:
+- [x] Create and initialize an SPL token mint
+- [x] Add metadata to the SPL token
+- [x] Mint SPL tokens
+- [x] Transfer SPL tokens to another wallet
+- [x] Upload an NFT image to Irys
+- [x] Upload NFT metadata to Irys
+- [x] Mint an NFT using Metaplex Core
+- [x] Update the NFT name and metadata as the update authority
 
-```
-root/
-└── devnet-wallet.json   ← here
-```
+### Optional Tasks
 
-It should be a JSON array of numbers, e.g. `[174, 23, ...]`.
+The following optional tasks were not required for the submission:
 
-### 2. Install dependencies
+- [ ] Transfer NFT ownership
+- [ ] Permanently destroy the NFT and reclaim rent
 
-```bash
-npm install
-```
+## Technologies Used
 
-```bash
-npm install --save-dev @types/node ts-node typescript
-```
+- Solana Devnet
+- TypeScript
+- Node.js
+- `@solana/kit`
+- `@solana-program/token`
+- Metaplex Core
+- Metaplex Token Metadata
+- Umi
+- Irys
 
-### 3. Add your image
+## Project Structure
 
-Place your image at the project root.
-
-```
-root/
-└── image.jpeg   ← here
-```
-
----
-
-> Before running the scripts, go through these docs:
-> - [Solana token docs](https://solana.com/docs/tokens) — mint accounts, token accounts, and ATAs
-> - [Solana Kit](https://www.solanakit.com/) — the JS SDK used for building and sending transactions
-> - [Metaplex Token Metadata](https://www.metaplex.com/docs/smart-contracts/token-metadata) — attaching metadata to SPL tokens
-> - [Metaplex Core](https://www.metaplex.com/docs/smart-contracts/core) — the NFT standard used in the NFT scripts
-
-## SPL Token
-
-Uses **@solana/kit** and **@solana-program/token** for transactions, and **mpl-token-metadata** via UMI for on-chain metadata.
-
-| Script | Command | What it does |
-|---|---|---|
-| `spl_init.ts` | `npm run spl:init` | Creates a new mint account |
-| `spl_metadata.ts` | `npm run spl:metadata` | Attaches a name, symbol, and URI to the mint |
-| `spl_mint.ts` | `npm run spl:mint` | Creates your associated token account and mints tokens into it |
-| `spl_transfer.ts` | `npm run spl:transfer` | Sends tokens to another wallet i.e ata to ata |
-
-Run them in order. Each script logs the addresses/signatures you'll need to paste into the next one.
-
----
-
-## NFT
-
-Uses **@solana/kit** and **mpl-core** via UMI. Images and metadata are stored on Irys (decentralized storage).
-
-| Script | Command | What it does |
-|---|---|---|
-| `nft_image.ts` | `npm run nft:image` | Uploads your image to Irys, logs the image URI |
-| `nft_metadata.ts` | `npm run nft:metadata` | Builds the metadata JSON and uploads it, logs the metadata URI |
-| `nft_mint.ts` | `npm run nft:mint` | Mints the NFT on-chain using the metadata URI |
-
-Run them in order. Paste the URI logged by each step into the next script before running it.
+```text
+spl-nft-q326/
+├── assets/
+│   └── Srinath.png
+│
+├── src/
+│   ├── nft/
+│   │   ├── nft_image.ts
+│   │   ├── nft_metadata.ts
+│   │   ├── nft_mint.ts
+│   │   └── nft_update.ts
+│   │
+│   └── spl/
+│       ├── spl_init.ts
+│       ├── spl_metadata.ts
+│       ├── spl_mint.ts
+│       └── spl_transfer.ts
+│
+├── .gitignore
+├── package.json
+├── README.md
+├── package-lock.json
+└── tsconfig.json

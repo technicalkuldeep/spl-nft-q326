@@ -1,4 +1,5 @@
 import {
+  createGenericFile,
   createSignerFromKeypair,
   signerIdentity,
 } from "@metaplex-foundation/umi";
@@ -10,7 +11,10 @@ const umi = createUmi(
   process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
 );
 
-const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(wallet));
+const keypair = umi.eddsa.createKeypairFromSecretKey(
+  new Uint8Array(wallet),
+);
+
 const signer = createSignerFromKeypair(umi, keypair);
 
 umi.use(
@@ -23,16 +27,41 @@ umi.use(signerIdentity(signer));
 
 (async () => {
   try {
-    //change the image uri to your image uri obtained from nft_image.ts
+    // URI of the image that we uploaded to Irys
     const image =
-      "https://gateway.irys.xyz/5EDyiNrMWfhjdsEwXLrwkHPwZoZB2m1A2Kudrfxo1tpr";
+      "https://gateway.irys.xyz/2ttotKkCP6roFpVvP2wQsb8JkjvLRHSGwYFsCKLRifLc";
 
-    //json scheme : https://www.metaplex.com/docs/smart-contracts/core/json-schema
-    //change the metadata
-    // const metadata =
-    // const myUri =
-    // console.log(`metadata uri: ${myUri} `);
+    // NFT metadata
+    const metadata = {
+      name: "Srinath NFT",
+      description: "My first NFT created using Metaplex Core.",
+      image: image,
+      attributes: [
+        {
+          trait_type: "Creator",
+          value: "Srinath",
+        },
+        {
+          trait_type: "Type",
+          value: "MPL Core NFT",
+        },
+      ],
+    };
+
+    // Convert metadata object into a JSON file
+    const metadataFile = createGenericFile(
+      JSON.stringify(metadata),
+      "metadata.json",
+      {
+        contentType: "application/json",
+      },
+    );
+
+    // Upload metadata JSON to Irys
+    const [myUri] = await umi.uploader.upload([metadataFile]);
+
+    console.log("Metadata URI:", myUri);
   } catch (error) {
-    console.log("error", error);
+    console.log("Error:", error);
   }
 })();
