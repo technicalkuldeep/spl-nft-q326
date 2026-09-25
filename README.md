@@ -6,7 +6,11 @@ The project was completed on Solana Devnet for practice and learning purposes.
 
 ## Requirements Completed
 
+<img width="1013" height="659" alt="image" src="https://github.com/user-attachments/assets/1db77646-b3a4-4796-a457-0c3f446f36f1" />
+
+
 ### Mandatory Tasks
+
 
 - [x] Create and initialize an SPL token mint
 - [x] Add metadata to the SPL token
